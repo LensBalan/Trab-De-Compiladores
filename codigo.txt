@@ -1,0 +1,39 @@
+INICIO
+
+!! Codigo aula de Compiladores
+
+x INTEIRO .
+a REAL .
+b INTEIRO .
+y CARACTER .
+z ZEROUM .
+i INTEIRO .
+
+x RECEBA 2
+y RECEBA ^Luva dnjsndndwsndwndwndw^ .
+z RECEBA 0 .
+b RECEBA 1 .
+
+ESCREVA ( ^Digite seu nome: \q ^) .
+RECEBAT y .
+
+SE (x > b ) {
+
+b INC .
+} SENAO {
+x INC .
+
+}
+
+DURANTE (x DIF b ) {
+x INC .
+}
+
+PARA (i RECEBA 0 . i < b . i INC ){
+
+b RECEBA a .
+
+}
+
+FIM
+

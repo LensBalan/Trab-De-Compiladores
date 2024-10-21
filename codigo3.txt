@@ -1,0 +1,4 @@
+INTEIRO REAL CARACTER ZEROUM SE SENAO DURANTE PARA AND OR 
+RECEBA RECEBAT ESCREVA INICIO FIM INC DIF IGUAL > < + - * /
+var1 var var2 34 34,50 33,1507 1000 . () !! Comentando aqui
+^ String de caracteres ^
