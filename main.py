@@ -5,6 +5,9 @@
 
 #Inicio
 
+
+#------------------------------------- Lexico -------------------------------------------
+
 #Lista para armazenar a tabela de Tokens(Token, Lexema)
 tabela_de_tokens = []
 
@@ -267,3 +270,141 @@ for token, lexema, linha in tabela_de_tokens:
 print("\n Tabela de Tokens: \n")
 for token in tokens_atualizados:
     print(token)
+
+
+
+#------------------------------------- Sintatico -------------------------------------------
+
+
+class AnalisadorSintatico:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0  # Posição atual na lista de tokens
+
+    def proximo_token(self):
+        if self.pos < len(self.tokens):
+            return self.tokens[self.pos]
+        return None
+
+    def consumir(self, tipo_esperado):
+        token = self.proximo_token()
+        if token and token[0] == tipo_esperado:
+            self.pos += 1  # Avança para o próximo token
+        else:
+            raise SyntaxError(f"Erro de sintaxe: esperado {tipo_esperado}, mas encontrado {token}")
+
+    def analisar(self):
+        self.programa()
+
+    def programa(self):
+        # Regra de produção: Programa -> INICIO Bloco FIM
+        self.consumir('INICIO')
+        self.bloco()
+        self.consumir('FIM')
+
+    def bloco(self):
+        # Regra de produção: Bloco -> { Declarações }
+        self.consumir('Chav_esquerda')
+        while self.proximo_token()[0] != 'Chav_direita':
+            self.declaracao()
+        self.consumir('Chav_direita')
+
+    def declaracao(self):
+        # Exemplo de uma declaração: Tipo_var ID .
+        tipo = ['INTEIRO', 'REAL', 'CARACTER', 'ZEROUM']
+        if self.proximo_token()[0] in tipo:
+            self.consumir(self.proximo_token()[0])  # Consome o tipo
+            self.consumir('ID')  # Consome o identificador
+            self.consumir('.')   # Consome o ponto final
+        else:
+            raise SyntaxError("Erro de sintaxe: tipo de variável esperado")
+
+    def atribuicao(self):
+        # Regra de produção: Atribuicao -> ID RECEBA Expressao .
+        self.consumir('ID')
+        self.consumir('RECEBA')
+        self.expressao()
+        self.consumir('.')
+
+    def expressao(self):
+        # Aqui você deve definir a lógica para expressões, como operadores
+        # Exemplo simples: ID | NUMERO | '...' (ou algo semelhante)
+        if self.proximo_token()[0] == 'ID':
+            self.consumir('ID')
+        elif self.proximo_token()[0] == 'NUMERO':
+            self.consumir('NUMERO')
+        elif self.proximo_token()[0] == 'STRING':
+            self.consumir('STRING')
+        else:
+            raise SyntaxError("Erro de sintaxe: expressão esperada")
+
+    def comando_escrever(self):
+        # Regra de produção: ESCRITA -> ESCREVA ( Expressao )
+        self.consumir('ESCREVA')
+        self.consumir('(')
+        self.expressao()
+        self.consumir(')')
+
+    def comando_se(self):
+        # Regra de produção: SE ( Condicao ) { Bloco } [ SENAO { Bloco } ]
+        self.consumir('SE')
+        self.consumir('(')
+        self.condicao()
+        self.consumir(')')
+        self.consumir('Chav_esquerda')
+        self.bloco()
+        self.consumir('Chav_direita')
+        if self.proximo_token()[0] == 'SENAO':
+            self.consumir('SENAO')
+            self.consumir('Chav_esquerda')
+            self.bloco()
+            self.consumir('Chav_direita')
+
+    def condicao(self):
+        # Defina a condição de comparação, por exemplo: x > y
+        self.consumir('ID')  # Exemplo: primeira variável
+        operador = ['>', 'DIF', '<', '>=', '<=', '==']
+        if self.proximo_token()[0] in operador:
+            self.consumir(self.proximo_token()[0])  # Consome o operador
+            self.consumir('ID')  # Exemplo: segunda variável
+        else:
+            raise SyntaxError("Erro de sintaxe: operador esperado")
+
+    def comando_durante(self):
+        # Regra de produção: DURANTE ( Condicao ) { Bloco }
+        self.consumir('DURANTE')
+        self.consumir('(')
+        self.condicao()
+        self.consumir(')')
+        self.consumir('Chav_esquerda')
+        self.bloco()
+        self.consumir('Chav_direita')
+
+    def comando_para(self):
+        # Regra de produção: PARA ( Atribuicao ; Condicao ; Atribuicao ) { Bloco }
+        self.consumir('PARA')
+        self.consumir('(')
+        self.atribuição()
+        self.consumir(';')
+        self.condicao()
+        self.consumir(';')
+        self.atribuição()
+        self.consumir(')')
+        self.consumir('Chav_esquerda')
+        self.bloco()
+        self.consumir('Chav_direita')
+
+# Função principal para executar o analisador
+def main():
+ 
+    # Inicializa o analisador sintático com os tokens atualizados
+    analisador = AnalisadorSintatico(tokens_atualizados)
+    
+    try:
+        analisador.analisar()
+        print("Análise sintática concluída com sucesso!")
+    except SyntaxError as e:
+        print(e)
+
+if __name__ == "__main__":
+    main()
