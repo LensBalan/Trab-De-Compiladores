@@ -1,3 +1,5 @@
+import pandas as pd
+
 # Autores: Leonardo Balan e Gabriel Santos da Silva
 
 # Analisador Lexico - Compiladores
@@ -146,7 +148,7 @@ estado_final = {
     'e18': 'Ponto',
     'e19': 'Op_aritmetico',
     'e20': 'Op_relacional',
-    'e23': 'String',
+    'e23': 'Caracter',
     'e24': 'ERRO, numero_invalido',
     'e25': 'ERRO, ID_invalido',
     'e26': 'ERRO, nome_var_invalido',
@@ -154,7 +156,7 @@ estado_final = {
     'e28': 'Chav_direita'
 }
 
-# Função para processar o arquivo e reconhecer os tokens
+# Modifica a função processar_codigo para evitar salvar comentários e espaços
 def processar_codigo(codigo):
     estado = estado_inicial  # estado de inicio de exec
     lexema = ''  # var para armazenar o lexema
@@ -168,7 +170,8 @@ def processar_codigo(codigo):
                     # Processa o último lexema ao final do arquivo
                     if estado in estado_final:
                         token = estado_final[estado]
-                        tabela_de_tokens.append((token, lexema.strip(), linha))
+                        if token not in {'Comentario', 'Espaco'}:  # Ignora comentário e espaço
+                            tabela_de_tokens.append((token, lexema.strip(), linha))
                     else:
                         tabela_de_tokens.append(('ERRO, Caracter Invalido', lexema.strip(), linha))
                 break
@@ -185,7 +188,8 @@ def processar_codigo(codigo):
                         # Adiciona o token acumulado até o erro
                         if estado in estado_final:
                             token = estado_final[estado]
-                            tabela_de_tokens.append((token, lexema.strip(), linha))
+                            if token not in {'Comentario', 'Espaco'}:  # Ignora comentário e espaço
+                                tabela_de_tokens.append((token, lexema.strip(), linha))
                         else:
                             tabela_de_tokens.append(('ERRO, caracter invalido', lexema.strip(), linha))
 
@@ -199,8 +203,9 @@ def processar_codigo(codigo):
                 elif novo_estado in estado_final:
                     lexema += caracter  # Adiciona o caractere ao lexema
                     token = estado_final[novo_estado]
-                    tabela_de_tokens.append((token, lexema.strip(), linha))
-                    
+                    if token not in {'Comentario', 'Espaco'}:  # Ignora comentário e espaço
+                        tabela_de_tokens.append((token, lexema.strip(), linha))
+
                     # Reinicia o estado
                     estado = estado_inicial
                     lexema = ''
@@ -267,144 +272,145 @@ for token, lexema, linha in tabela_de_tokens:
     else:
         tokens_atualizados.append((token, lexema, linha))
 
+#Imprime e salva a tabela de tokens no arquivo
+def salvar_tokens_em_arquivo(nome_arquivo, tokens):
+    with open(nome_arquivo, 'w') as arquivo:
+        for token in tokens:
+            #Escreve cada token em uma linha no arquivo
+            arquivo.write(f"{token}\n")
+
 print("\n Tabela de Tokens: \n")
 for token in tokens_atualizados:
     print(token)
+#
+#  Salva a tabela de tokens atualizada em um arquivo
+salvar_tokens_em_arquivo('tokens.txt', tokens_atualizados)
 
+# ------------------------------- Sintático ---------------------------------------
 
+# Carrega a tabela SLR do arquivo .xlsx
+def carregar_tabela_SLR(caminho_arquivo):
+    # Carrega a planilha, assumindo que a primeira linha é o cabeçalho com os símbolos (terminais e não-terminais)
+    tabela = pd.read_excel(caminho_arquivo, index_col=0)  # index_col=0 define a primeira coluna como índices (estados)
+    return tabela
 
-#------------------------------------- Sintatico -------------------------------------------
-
-
-class AnalisadorSintatico:
-    def __init__(self, tokens):
-        self.tokens = tokens
-        self.pos = 0  # Posição atual na lista de tokens
-
-    def proximo_token(self):
-        if self.pos < len(self.tokens):
-            return self.tokens[self.pos]
+# Interpreta as entradas da tabela SLR
+def interpretar_entrada_tabela(entrada):
+    if pd.isna(entrada):  # Verifica se a célula está vazia
         return None
+    elif entrada == 'AC':
+        return ('aceita', None)
+    elif entrada.startswith('E'):
+        return ('empilha', int(entrada[1:]))  # Ex: 'E3' -> (empilha, 3)
+    elif entrada.startswith('R'):
+        return ('reduz', int(entrada[1:]))  # Rx: 'R2' -> (reduz, 2)
+    else:
+        return ('desvio', int(entrada))  # Apenas um número indica desvio para o estado
 
-    def consumir(self, tipo_esperado):
-        token = self.proximo_token()
-        if token and token[0] == tipo_esperado:
-            self.pos += 1  # Avança para o próximo token
+# Define a gramática: lista de produções (não-terminal, [lista de símbolos do lado direito])
+producoes = {
+    0: ('<Programa`>', ['Programa']),
+    1: ('Programa', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
+    2: ('DECLS', ['DECL', 'DECLS']),
+    3: ('DECLS', []),  # Ɛ
+    4: ('DECL', ['Variavel', 'TIPO', '.']),
+    5: ('TIPO', ['INTEIRO']),
+    6: ('TIPO', ['REAL']),
+    7: ('TIPO', ['CARACTER']),
+    8: ('TIPO', ['ZEROUM']),
+    9: ('INSTRUCOES', ['INSTRUCAO', 'INSTRUCOES']),
+    10: ('INSTRUCOES', []),  # Ɛ
+    11: ('INSTRUCAO', ['ATRIB']),
+    12: ('INSTRUCAO', ['ATRIB_TECLADO']),
+    13: ('INSTRUCAO', ['ESCREVER']),
+    14: ('INSTRUCAO', ['CONDICIONAL_SE']),
+    15: ('INSTRUCAO', ['LOOP_DURANTE']),
+    16: ('INSTRUCAO', ['LOOP_PARA']),
+    17: ('ATRIB', ['Variavel', 'RECEBA', 'EXPR', '.']),
+    18: ('ATRIB_TECLADO', ['RECEBAT', 'Variavel', '.']),
+    19: ('ESCREVER', ['ESCREVA', '(', 'EXPR', ')', '.']),
+    20: ('CONDICIONAL_SE', ['SE', '(', 'EXPR', ')', '{', 'INSTRUCOES', '}', 'SENAO_OP']),
+    21: ('SENAO_OP', ['SENAO', '{', 'INSTRUCOES', '}']),
+    22: ('SENAO_OP', []),  # Ɛ
+    23: ('LOOP_DURANTE', ['DURANTE', '(', 'EXPR', ')', '{', 'INSTRUCOES', 'Variavel', 'INC_DEC', '}']),
+    24: ('LOOP_PARA', ['PARA', '(', 'ATRIB', '.', 'CONDICAO', '.', 'Variavel', 'INC_DEC', ')', '{', 'INSTRUCOES', '}']),
+    25: ('CONDICAO', ['EXPR', 'OP_RELACIONAL', 'EXPR']),
+    26: ('INC_DEC', ['INC']),
+    27: ('INC_DEC', ['DEC']),
+    28: ('INC_DEC', ['OP_ARIT', 'Num_inteiro']),
+    29: ('EXPR', ['TERM', 'OP', 'TERM']),
+    30: ('EXPR', ['TERM']),
+    31: ('TERM', ['Num_inteiro']),
+    32: ('TERM', ['Num_real']),
+    33: ('TERM', ['Caracter']),
+    34: ('TERM', ['ZEROUM']),
+    35: ('OP', ['OP_RELACIONAL']),
+    36: ('OP', ['OP_ARIT']),
+    37: ('OP', ['OP_LOGICO']),
+    38: ('OP_ARIT', ['+']),
+    39: ('OP_ARIT', ['-']),
+    40: ('OP_ARIT', ['*']),
+    41: ('OP_ARIT', ['/']),
+    42: ('OP_LOGICO', ['AND']),
+    43: ('OP_LOGICO', ['OR']),
+    44: ('OP_RELACIONAL', ['>']),
+    45: ('OP_RELACIONAL', ['<']),
+    46: ('OP_RELACIONAL', ['IGUAL']),
+    47: ('OP_RELACIONAL', ['DIF']),
+}
+
+# Caminho para o arquivo Excel
+caminho_arquivo = 'Tabela_SLR.xlsx'
+tabela_SLR = carregar_tabela_SLR(caminho_arquivo)
+print("Tabela SLR Carregada.")
+
+# Analisador Sintático SLR
+def analisador_sintatico(tokens, tabela_SLR, producoes):
+    pilha = [0]  # Estado inicial é 0
+    cursor = 0   # Índice do token atual
+    while cursor < len(tokens):
+        estado_atual = pilha[-1]  # Estado no topo da pilha
+        token_atual = tokens[cursor][0]  # Obter o token atual (ex: 'ID', 'NUM')
+
+        # Busca a ação na tabela SLR
+        acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
+
+        if acao is None:
+            print(f"Erro sintático: token inesperado '{token_atual}' na linha {tokens[cursor][2]}")
+            return False
+        elif acao[0] == 'aceita':
+            print("Aceitação: análise sintática concluída com sucesso.")
+            return True
+        elif acao[0] == 'empilha':
+            novo_estado = acao[1]
+            pilha.append(token_atual)  # Empilha o token atual
+            pilha.append(novo_estado)  # Empilha o novo estado
+            cursor += 1  # Avança para o próximo token
+        elif acao[0] == 'reduz':
+            num_producao = acao[1]
+            nao_terminal, producao = producoes[num_producao]
+            tamanho_producao = len(producao) * 2  # Dobra o tamanho devido aos estados na pilha
+            
+            # Desempilha os elementos correspondentes à produção
+            pilha = pilha[:-tamanho_producao]
+            estado_topo = pilha[-1]
+            
+            # Transição de estado com o não-terminal reduzido
+            desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
+            if desvio is None or desvio[0] != 'desvio':
+                print(f"Erro de desvio: não-terminal '{nao_terminal}' inesperado após redução.")
+                return False
+            
+            # Empilha o não-terminal e o novo estado de desvio
+            pilha.append(nao_terminal)
+            pilha.append(desvio[1])
         else:
-            raise SyntaxError(f"Erro de sintaxe: esperado {tipo_esperado}, mas encontrado {token}")
+            print("Erro: Ação desconhecida.")
+            return False
 
-    def analisar(self):
-        self.programa()
+    print("Erro: Fim inesperado da entrada.")
+    return False
 
-    def programa(self):
-        # Regra de produção: Programa -> INICIO Bloco FIM
-        self.consumir('INICIO')
-        self.bloco()
-        self.consumir('FIM')
-
-    def bloco(self):
-        # Regra de produção: Bloco -> { Declarações }
-        self.consumir('Chav_esquerda')
-        while self.proximo_token()[0] != 'Chav_direita':
-            self.declaracao()
-        self.consumir('Chav_direita')
-
-    def declaracao(self):
-        # Exemplo de uma declaração: Tipo_var ID .
-        tipo = ['INTEIRO', 'REAL', 'CARACTER', 'ZEROUM']
-        if self.proximo_token()[0] in tipo:
-            self.consumir(self.proximo_token()[0])  # Consome o tipo
-            self.consumir('ID')  # Consome o identificador
-            self.consumir('.')   # Consome o ponto final
-        else:
-            raise SyntaxError("Erro de sintaxe: tipo de variável esperado")
-
-    def atribuicao(self):
-        # Regra de produção: Atribuicao -> ID RECEBA Expressao .
-        self.consumir('ID')
-        self.consumir('RECEBA')
-        self.expressao()
-        self.consumir('.')
-
-    def expressao(self):
-        # Aqui você deve definir a lógica para expressões, como operadores
-        # Exemplo simples: ID | NUMERO | '...' (ou algo semelhante)
-        if self.proximo_token()[0] == 'ID':
-            self.consumir('ID')
-        elif self.proximo_token()[0] == 'NUMERO':
-            self.consumir('NUMERO')
-        elif self.proximo_token()[0] == 'STRING':
-            self.consumir('STRING')
-        else:
-            raise SyntaxError("Erro de sintaxe: expressão esperada")
-
-    def comando_escrever(self):
-        # Regra de produção: ESCRITA -> ESCREVA ( Expressao )
-        self.consumir('ESCREVA')
-        self.consumir('(')
-        self.expressao()
-        self.consumir(')')
-
-    def comando_se(self):
-        # Regra de produção: SE ( Condicao ) { Bloco } [ SENAO { Bloco } ]
-        self.consumir('SE')
-        self.consumir('(')
-        self.condicao()
-        self.consumir(')')
-        self.consumir('Chav_esquerda')
-        self.bloco()
-        self.consumir('Chav_direita')
-        if self.proximo_token()[0] == 'SENAO':
-            self.consumir('SENAO')
-            self.consumir('Chav_esquerda')
-            self.bloco()
-            self.consumir('Chav_direita')
-
-    def condicao(self):
-        # Defina a condição de comparação, por exemplo: x > y
-        self.consumir('ID')  # Exemplo: primeira variável
-        operador = ['>', 'DIF', '<', '>=', '<=', '==']
-        if self.proximo_token()[0] in operador:
-            self.consumir(self.proximo_token()[0])  # Consome o operador
-            self.consumir('ID')  # Exemplo: segunda variável
-        else:
-            raise SyntaxError("Erro de sintaxe: operador esperado")
-
-    def comando_durante(self):
-        # Regra de produção: DURANTE ( Condicao ) { Bloco }
-        self.consumir('DURANTE')
-        self.consumir('(')
-        self.condicao()
-        self.consumir(')')
-        self.consumir('Chav_esquerda')
-        self.bloco()
-        self.consumir('Chav_direita')
-
-    def comando_para(self):
-        # Regra de produção: PARA ( Atribuicao ; Condicao ; Atribuicao ) { Bloco }
-        self.consumir('PARA')
-        self.consumir('(')
-        self.atribuição()
-        self.consumir(';')
-        self.condicao()
-        self.consumir(';')
-        self.atribuição()
-        self.consumir(')')
-        self.consumir('Chav_esquerda')
-        self.bloco()
-        self.consumir('Chav_direita')
-
-# Função principal para executar o analisador
-def main():
- 
-    # Inicializa o analisador sintático com os tokens atualizados
-    analisador = AnalisadorSintatico(tokens_atualizados)
-    
-    try:
-        analisador.analisar()
-        print("Análise sintática concluída com sucesso!")
-    except SyntaxError as e:
-        print(e)
-
-if __name__ == "__main__":
-    main()
+# Executa o analisador sintático com os tokens gerados e a tabela SLR carregada
+tokens = tokens_atualizados  # Assume que a lista tokens_atualizados está preenchida com os tokens do léxico
+analisador_sintatico(tokens, tabela_SLR, producoes)

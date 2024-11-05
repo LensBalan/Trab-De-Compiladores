@@ -9,7 +9,8 @@ y CARACTER .
 z ZEROUM .
 i INTEIRO .
 
-x RECEBA 2
+a RECEBA 1,5 .
+x RECEBA 2 .
 y RECEBA ^Luva dnjsndndwsndwndwndw^ .
 z RECEBA 0 .
 b RECEBA 1 .
@@ -19,9 +20,9 @@ RECEBAT y .
 
 SE (x > b ) {
 
-b INC .
+a RECEBA y + z .
 } SENAO {
-x INC .
+a RECEBA b .
 
 }
 
