@@ -141,19 +141,19 @@ estado_final = {
     'e8': 'Comentario',
     'e9': 'Espaco',
     'e10': 'ERRO, caracter_invalido',
-    'e12': 'Num_Inteiro',
-    'e15': 'Num_Real',
-    'e16': 'Par_esquerdo',
-    'e17': 'Par_direito',
-    'e18': 'Ponto',
-    'e19': 'Op_aritmetico',
+    'e12': 'Num_inteiro',
+    'e15': 'Num_real',
+    'e16': '(',
+    'e17': ')',
+    'e18': '.',
+    'e19': 'Op_arit',
     'e20': 'Op_relacional',
     'e23': 'Caracter',
     'e24': 'ERRO, numero_invalido',
     'e25': 'ERRO, ID_invalido',
     'e26': 'ERRO, nome_var_invalido',
-    'e27': 'Chav_esquerda',
-    'e28': 'Chav_direita'
+    'e27': '{',
+    'e28': '}'
 }
 
 # Modifica a função processar_codigo para evitar salvar comentários e espaços
@@ -241,10 +241,10 @@ Tipos_id = {
     'SENAO': 'SENAO',
     'DURANTE': 'DURANTE',
     'PARA': 'PARA',
-    'INTEIRO': 'Tipo_var',
-    'REAL': 'Tipo_var',
-    'CARACTER': 'Tipo_var',
-    'ZEROUM': 'Tipo_var',
+    'INTEIRO': 'INTEIRO',
+    'REAL': 'REAL',
+    'CARACTER': 'CARACTER',
+    'ZEROUM': 'ZEROUM',
     'AND': 'Op_logico',
     'OR': 'Op_logico',
     'RECEBA': 'RECEBA',
@@ -272,42 +272,46 @@ for token, lexema, linha in tabela_de_tokens:
     else:
         tokens_atualizados.append((token, lexema, linha))
 
-#Imprime e salva a tabela de tokens no arquivo
-def salvar_tokens_em_arquivo(nome_arquivo, tokens):
-    with open(nome_arquivo, 'w') as arquivo:
-        for token in tokens:
-            #Escreve cada token em uma linha no arquivo
-            arquivo.write(f"{token}\n")
-
 print("\n Tabela de Tokens: \n")
 for token in tokens_atualizados:
     print(token)
-#
-#  Salva a tabela de tokens atualizada em um arquivo
-salvar_tokens_em_arquivo('tokens.txt', tokens_atualizados)
+
 
 # ------------------------------- Sintático ---------------------------------------
 
-# Carrega a tabela SLR do arquivo .xlsx
-def carregar_tabela_SLR(caminho_arquivo):
-    # Carrega a planilha, assumindo que a primeira linha é o cabeçalho com os símbolos (terminais e não-terminais)
-    tabela = pd.read_excel(caminho_arquivo, index_col=0)  # index_col=0 define a primeira coluna como índices (estados)
+def carregar_tabela_SLR(arq):
+    #Carrega a planilha
+    tabela = pd.read_excel(arq, index_col=0)  # index_col=0 define a primeira coluna comoos estados
     return tabela
 
-# Interpreta as entradas da tabela SLR
-def interpretar_entrada_tabela(entrada):
-    if pd.isna(entrada):  # Verifica se a célula está vazia
-        return None
-    elif entrada == 'AC':
-        return ('aceita', None)
-    elif entrada.startswith('E'):
-        return ('empilha', int(entrada[1:]))  # Ex: 'E3' -> (empilha, 3)
-    elif entrada.startswith('R'):
-        return ('reduz', int(entrada[1:]))  # Rx: 'R2' -> (reduz, 2)
-    else:
-        return ('desvio', int(entrada))  # Apenas um número indica desvio para o estado
+# Caminho para o arquivo Excel
+arq = 'Tabela_SLR.xlsx'
+tabela_SLR = carregar_tabela_SLR(arq)
+print("Tabela SLR Carregada.")
+print()
 
-# Define a gramática: lista de produções (não-terminal, [lista de símbolos do lado direito])
+#Interpretar E, R, AC e desvios da tabela
+def interpretar_entrada_tabela(entrada):
+    #Verifica se a entrada é uma string para identificar empilha/reduz/aceita
+    if isinstance(entrada, str):
+        
+        if entrada.startswith('E'):
+            return ('empilha', int(entrada[1:]))
+        
+        elif entrada.startswith('R'):
+            return ('reduz', int(entrada[1:]))
+        
+        elif entrada == 'AC':
+            return ('aceita',)
+    
+    elif isinstance(entrada, (int, float)):
+        #Entrada apenas de um numero representa um desvio
+        return ('desvio', int(entrada))
+    
+    #Se a entrada nao é reconhecida, retorna None para erro de interpretaçao
+    return None
+
+#Gramatica
 producoes = {
     0: ('<programa`>', ['<programa>']),
     1: ('<programa>', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
@@ -359,25 +363,27 @@ producoes = {
     47: ('<op_relacional>', ['DIF']),
 }
 
-# Caminho para o arquivo Excel
-caminho_arquivo = 'Tabela_SLR.xlsx'
-tabela_SLR = carregar_tabela_SLR(caminho_arquivo)
-print("Tabela SLR Carregada.")
-print()
 
-# Analisador Sintático SLR
-def analisador_sintatico(tokens, tabela_SLR, producoes):
-    pilha = [0]  # Estado inicial é 0
-    cursor = 0   # Índice do token atual
+def analisador_sintatico_bottom_up(tokens, tabela_SLR, producoes):
+    pilha = [0]  #Estado inicial
+    cursor = 0   #indice do token atual
+
     while cursor < len(tokens):
-        estado_atual = pilha[-1]  # Estado no topo da pilha
-        token_atual = tokens[cursor][0]  # Obter o token atual (ex: 'ID', 'NUM')
-        print("estado atual: ", estado_atual)
-        print("token_atual:",  token_atual)
-        # Busca a ação na tabela SLR
-        acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
-        print("acao: ", acao)
+        estado_atual = pilha[-1]  #Estado no topo da pilha
+        token_atual = tokens[cursor][0]  #Obter o token atual (ex: 'INICIO', 'PARA')
+        print("Estado atual:", estado_atual)
+        print("Token atual:", token_atual)
+
+        #Verifica se o token existe na tabela e se a entrada não é NaN (vazio)
+        if token_atual in tabela_SLR.columns and not pd.isna(tabela_SLR.loc[estado_atual, token_atual]):
+            acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
+        else:
+            print(f"Erro: Token '{token_atual}' não encontrado na tabela ou entrada invalida para o estado {estado_atual}.")
+            return False
+
+        print("Ação:", acao)
         print()
+
         if acao is None:
             print(f"Erro sintático: token inesperado '{token_atual}' na linha {tokens[cursor][2]}")
             return False
@@ -388,25 +394,29 @@ def analisador_sintatico(tokens, tabela_SLR, producoes):
             novo_estado = acao[1]
             pilha.append(token_atual)  # Empilha o token atual
             pilha.append(novo_estado)  # Empilha o novo estado
-            cursor += 1  # Avança para o próximo token
+            cursor += 1  #Avança para o prox token
         elif acao[0] == 'reduz':
             num_producao = acao[1]
             nao_terminal, producao = producoes[num_producao]
-            tamanho_producao = len(producao) * 2  # Dobra o tamanho devido aos estados na pilha
-            
-            # Desempilha os elementos correspondentes à produção
+            tamanho_producao = len(producao) * 2  #O dobro na reduçao
+            #Desempilha os elementos correspondentes a prod
             pilha = pilha[:-tamanho_producao]
             estado_topo = pilha[-1]
-            
-            # Transição de estado com o não-terminal reduzido
-            desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
-            if desvio is None or desvio[0] != 'desvio':
+
+            #Transição de estado com o não-terminal reduzido
+            if nao_terminal in tabela_SLR.columns and not pd.isna(tabela_SLR.loc[estado_topo, nao_terminal]):
+                desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
+            else:
                 print(f"Erro de desvio: não-terminal '{nao_terminal}' inesperado após redução.")
                 return False
-            
-            # Empilha o não-terminal e o novo estado de desvio
-            pilha.append(nao_terminal)
-            pilha.append(desvio[1])
+
+            # erifica se a ação de desvio é valida
+            if desvio and desvio[0] == 'desvio':
+                pilha.append(nao_terminal)
+                pilha.append(desvio[1])
+            else:
+                print(f"Erro: Ação de desvio invalida para o não-terminal '{nao_terminal}'")
+                return False
         else:
             print("Erro: Ação desconhecida.")
             return False
@@ -414,6 +424,6 @@ def analisador_sintatico(tokens, tabela_SLR, producoes):
     print("Erro: Fim inesperado da entrada.")
     return False
 
-# Executa o analisador sintático com os tokens gerados e a tabela SLR carregada
-tokens = tokens_atualizados  # Assume que a lista tokens_atualizados está preenchida com os tokens do léxico
-analisador_sintatico(tokens, tabela_SLR, producoes)
+
+tokens1 = tokens_atualizados #tokens do lexico
+analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes)
