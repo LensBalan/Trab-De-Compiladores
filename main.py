@@ -309,60 +309,61 @@ def interpretar_entrada_tabela(entrada):
 
 # Define a gramática: lista de produções (não-terminal, [lista de símbolos do lado direito])
 producoes = {
-    0: ('<Programa`>', ['Programa']),
-    1: ('Programa', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
-    2: ('DECLS', ['DECL', 'DECLS']),
-    3: ('DECLS', []),  # Ɛ
-    4: ('DECL', ['Variavel', 'TIPO', '.']),
-    5: ('TIPO', ['INTEIRO']),
-    6: ('TIPO', ['REAL']),
-    7: ('TIPO', ['CARACTER']),
-    8: ('TIPO', ['ZEROUM']),
-    9: ('INSTRUCOES', ['INSTRUCAO', 'INSTRUCOES']),
-    10: ('INSTRUCOES', []),  # Ɛ
-    11: ('INSTRUCAO', ['ATRIB']),
-    12: ('INSTRUCAO', ['ATRIB_TECLADO']),
-    13: ('INSTRUCAO', ['ESCREVER']),
-    14: ('INSTRUCAO', ['CONDICIONAL_SE']),
-    15: ('INSTRUCAO', ['LOOP_DURANTE']),
-    16: ('INSTRUCAO', ['LOOP_PARA']),
-    17: ('ATRIB', ['Variavel', 'RECEBA', 'EXPR', '.']),
-    18: ('ATRIB_TECLADO', ['RECEBAT', 'Variavel', '.']),
-    19: ('ESCREVER', ['ESCREVA', '(', 'EXPR', ')', '.']),
-    20: ('CONDICIONAL_SE', ['SE', '(', 'EXPR', ')', '{', 'INSTRUCOES', '}', 'SENAO_OP']),
-    21: ('SENAO_OP', ['SENAO', '{', 'INSTRUCOES', '}']),
-    22: ('SENAO_OP', []),  # Ɛ
-    23: ('LOOP_DURANTE', ['DURANTE', '(', 'EXPR', ')', '{', 'INSTRUCOES', 'Variavel', 'INC_DEC', '}']),
-    24: ('LOOP_PARA', ['PARA', '(', 'ATRIB', '.', 'CONDICAO', '.', 'Variavel', 'INC_DEC', ')', '{', 'INSTRUCOES', '}']),
-    25: ('CONDICAO', ['EXPR', 'OP_RELACIONAL', 'EXPR']),
-    26: ('INC_DEC', ['INC']),
-    27: ('INC_DEC', ['DEC']),
-    28: ('INC_DEC', ['OP_ARIT', 'Num_inteiro']),
-    29: ('EXPR', ['TERM', 'OP', 'TERM']),
-    30: ('EXPR', ['TERM']),
-    31: ('TERM', ['Num_inteiro']),
-    32: ('TERM', ['Num_real']),
-    33: ('TERM', ['Caracter']),
-    34: ('TERM', ['ZEROUM']),
-    35: ('OP', ['OP_RELACIONAL']),
-    36: ('OP', ['OP_ARIT']),
-    37: ('OP', ['OP_LOGICO']),
-    38: ('OP_ARIT', ['+']),
-    39: ('OP_ARIT', ['-']),
-    40: ('OP_ARIT', ['*']),
-    41: ('OP_ARIT', ['/']),
-    42: ('OP_LOGICO', ['AND']),
-    43: ('OP_LOGICO', ['OR']),
-    44: ('OP_RELACIONAL', ['>']),
-    45: ('OP_RELACIONAL', ['<']),
-    46: ('OP_RELACIONAL', ['IGUAL']),
-    47: ('OP_RELACIONAL', ['DIF']),
+    0: ('<programa`>', ['<programa>']),
+    1: ('<programa>', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
+    2: ('<decls>', ['<decl>', '<decls>']),
+    3: ('<decls>', []),  # Ɛ
+    4: ('<decl>', ['Variavel', '<tipo>', '.']),
+    5: ('<tipo>', ['INTEIRO']),
+    6: ('<tipo>', ['REAL']),
+    7: ('<tipo>', ['CARACTER']),
+    8: ('<tipo>', ['ZEROUM']),
+    9: ('<instrucoes>', ['<instrucao>', '<instrucoes>']),
+    10: ('<instrucoes>', []),  # Ɛ
+    11: ('<instrucao>', ['<atrib>']),
+    12: ('<instrucao>', ['<atrib_teclado>']),
+    13: ('<instrucao>', ['<escrever>']),
+    14: ('<instrucao>', ['<condicional_se>']),
+    15: ('<instrucao>', ['<loop_durante>']),
+    16: ('<instrucao>', ['<loop_para>']),
+    17: ('<atrib>', ['Variavel', 'RECEBA', '<expr>', '.']),
+    18: ('<atrib_teclado>', ['RECEBAT', 'Variavel', '.']),
+    19: ('<escrever>', ['ESCREVA', '(', '<expr>', ')', '.']),
+    20: ('<condicional_se>', ['SE', '(', '<expr>', ')', '{', '<instrucoes>', '}', '<senao_op>']),
+    21: ('<senao_op>', ['SENAO', '{', '<instrucoes>', '}']),
+    22: ('<senao_op>', []),  # Ɛ
+    23: ('<loop_durante>', ['DURANTE', '(', '<expr>', ')', '{', '<instrucoes>', 'Variavel', '<inc_dec>', '}']),
+    24: ('<loop_para>', ['PARA', '(', '<atrib>', '.', '<condicao>', '.', 'Variavel', '<inc_dec>', ')', '{', '<instrucoes>', '}']),
+    25: ('<condicao>', ['<expr>', '<op_relacional>', '<expr>']),
+    26: ('<inc_dec>', ['INC']),
+    27: ('<inc_dec>', ['DEC']),
+    28: ('<inc_dec>', ['<op_arit>', 'Num_inteiro']),
+    29: ('<expr>', ['<term>', '<op>', '<term>']),
+    30: ('<expr>', ['<term>']),
+    31: ('<term>', ['Num_inteiro']),
+    32: ('<term>', ['Num_real']),
+    33: ('<term>', ['Caracter']),
+    34: ('<term>', ['ZEROUM']),
+    35: ('<op>', ['<op_relacional>']),
+    36: ('<op>', ['<op_arit>']),
+    37: ('<op>', ['<op_logico>']),
+    38: ('<op_arit>', ['+']),
+    39: ('<op_arit>', ['-']),
+    40: ('<op_arit>', ['*']),
+    41: ('<op_arit>', ['/']),
+    42: ('<op_logico>', ['AND']),
+    43: ('<op_logico>', ['OR']),
+    44: ('<op_relacional>', ['>']),
+    45: ('<op_relacional>', ['<']),
+    46: ('<op_relacional>', ['IGUAL']),
+    47: ('<op_relacional>', ['DIF']),
 }
 
 # Caminho para o arquivo Excel
 caminho_arquivo = 'Tabela_SLR.xlsx'
 tabela_SLR = carregar_tabela_SLR(caminho_arquivo)
 print("Tabela SLR Carregada.")
+print()
 
 # Analisador Sintático SLR
 def analisador_sintatico(tokens, tabela_SLR, producoes):
@@ -371,10 +372,12 @@ def analisador_sintatico(tokens, tabela_SLR, producoes):
     while cursor < len(tokens):
         estado_atual = pilha[-1]  # Estado no topo da pilha
         token_atual = tokens[cursor][0]  # Obter o token atual (ex: 'ID', 'NUM')
-
+        print("estado atual: ", estado_atual)
+        print("token_atual:",  token_atual)
         # Busca a ação na tabela SLR
         acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
-
+        print("acao: ", acao)
+        print()
         if acao is None:
             print(f"Erro sintático: token inesperado '{token_atual}' na linha {tokens[cursor][2]}")
             return False
