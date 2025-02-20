@@ -18,7 +18,7 @@ b RECEBA 1 .
 ESCREVA ( ^Digite seu nome: \q ^) .
 RECEBAT y .
 
-SE (x > b ) {
+SE (a > b ) {
 
 a RECEBA y + z .
 } SENAO {
