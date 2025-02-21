@@ -247,6 +247,9 @@ for token in tokens_atualizados:
     print(token[0])
 
 print()
+#cifra = $
+#tokens_atualizados.append((cifra, cifra, 0))
+#print(tokens_atualizados)
 
 # ------------------------------- Sintático ---------------------------------------
 
@@ -357,14 +360,14 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
           
           #Se o próximo token for FIM ou um token de <instrucoes>, o parser deve reduzir <decls> para Ɛ em vez de continuar a produção recursiva.
         
-        if token_atual == 'FIM' and estado_atual == 4 :
-          print('Caso especial: SAIMOS DE instruções')
-          novo_estado = 12  # Usa o estado normal da ação
-          estado_atual = 12  
+        #if token_atual == 'FIM' and estado_atual == 4 :
+        #  print('Caso especial: SAIMOS DE instruções')
+        #  novo_estado = 12  # Usa o estado normal da ação
+        #  estado_atual = 12  
             
-          pilha.append(token_atual)  #Empilha o token atual
-          pilha.append(novo_estado)  #Empilha o novo estado
-          print(pilha)
+        #  pilha.append(token_atual)  #Empilha o token atual
+        #  pilha.append(novo_estado)  #Empilha o novo estado
+        #  print(pilha)
           #cursor += 1  #Avança para o próximo token
         #  if cursor + 1 < len(tokens1):  # Verifica se há um próximo token
         #    estado_atual = 
@@ -450,7 +453,7 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
             tamanho_producao = len(producao) * 2  #O dobro na redução
             #Desempilha os elementos correspondentes à produção
             pilha = pilha[:-tamanho_producao]
-            print(pilha)
+            #print(pilha)
             estado_topo = pilha[-1]
 
             #Transição de estado com o não-terminal reduzido
@@ -458,7 +461,7 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
                 desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
             else:
                 print(f"Erro de desvio: não-terminal '{nao_terminal}' inesperado após redução.")
-                print(pilha)
+                #print(pilha)
                 return False
 
             #Verifica se a ação de desvio é válida
@@ -471,9 +474,9 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
         else:
             print("Erro: Ação desconhecida.")
             return False
-    print(token_atual)
-    print(estado_atual)
-    print(pilha)
+    #print(token_atual)
+    #print(estado_atual)
+    #print(pilha)
     print("Erro: Fim inesperado da entrada.")
     return False
 
