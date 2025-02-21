@@ -47,6 +47,8 @@ def transicao(estado, caracter):
     elif estado == 'e2': 
         if 'A' <= caracter <= 'Z': 
           return 'e2'
+        if caracter == '_':
+          return 'e2'
         if caracter == ' ' or caracter == '\n':
           return 'e3'
         return 'e25' # Erro, ID invalido
@@ -63,16 +65,9 @@ def transicao(estado, caracter):
           return 'e7'
         return 'e10'
     elif estado == 'e7':
-        if 'a' <= caracter <= 'z':
-          return 'e7'
-        if 'A' <= caracter <= 'Z':
-          return 'e7'
-        if '0' <= caracter <= '9':
-          return 'e7'
-        if caracter == ' ':
-          return 'e7'
-        if caracter == '\n':
+        if caracter in ('\n', '\r'):  # Se encontrar quebra de linha, finaliza o comentário
           return 'e8'
+        return 'e7'  # Continua consumindo caracteres normalmente
     elif estado == 'e11':
         if '0' <= caracter <= '9':
           return 'e11'
@@ -209,6 +204,9 @@ processar_codigo('codigo.txt')
 
 #Dic para obter_token()
 Tipos_id = {
+    'VAZIO_DECLS': 'VAZIO_DECLS',
+    'VAZIO_INSTRUCOES': 'VAZIO_INSTRUCOES',
+    'SENAO_VAZIO': 'SENAO_VAZIO',
     'SE': 'SE',
     'SENAO': 'SENAO',
     'DURANTE': 'DURANTE',
@@ -258,7 +256,7 @@ def carregar_tabela_SLR(arq):
     return tabela
 
 # arq excel
-arq = 'Tabela_SLR3.xlsx'
+arq = 'Tabela_SLR4.xlsx'
 tabela_SLR = carregar_tabela_SLR(arq)
 print("Tabela SLR Carregada.")
 print()
@@ -286,55 +284,49 @@ def interpretar_entrada_tabela(entrada):
 #Gramatica
 producoes = {
     0: ('<programa`>', ['<programa>']),
-    1: ('<programa>', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
-    2: ('<decls>', ['<decl>', '<decls>']),
-    3: ('<decls>', []),  # Ɛ
-    4: ('<decl>', ['Variavel', '<tipo>', '.']),
-    5: ('<decl>', ['Variavel', '<atrib>']),
-    6: ('<tipo>', ['INTEIRO']),
-    7: ('<tipo>', ['REAL']),
-    8: ('<tipo>', ['CARACTER']),
-    9: ('<tipo>', ['ZEROUM']),
-    10: ('<instrucoes>', ['<instrucao>', '<instrucoes>']),
-    11: ('<instrucoes>', []),  # Ɛ
-    12: ('<instrucao>', ['<atrib>']),
-    13: ('<instrucao>', ['<atrib_teclado>']),
-    14: ('<instrucao>', ['<escrever>']),
-    15: ('<instrucao>', ['<condicional_se>']),
-    16: ('<instrucao>', ['<loop_durante>']),
-    17: ('<instrucao>', ['<loop_para>']),
-    18: ('<atrib>', ['RECEBA', '<expr>', '.']),
-    19: ('<atrib_teclado>', ['RECEBAT', 'Variavel', '.']),
-    20: ('<escrever>', ['ESCREVA', '(', '<expr>', ')', '.']),
-    21: ('<condicional_se>', ['SE', '(', '<expr>', ')', '{', '<instrucoes>', '}', '<senao_op>']),
-    22: ('<senao_op>', ['SENAO', '{', '<instrucoes>', '}']),
-    23: ('<senao_op>', []),  # Ɛ
-    24: ('<loop_durante>', ['DURANTE', '(', '<expr>', ')', '{', '<instrucoes>', 'Variavel', '<inc_dec>', '}']),
-    25: ('<loop_para>', ['PARA', '(', '<atrib>', '.', '<condicao>', '.', 'Variavel', '<inc_dec>', ')', '{', '<instrucoes>', '}']),
-    26: ('<condicao>', ['<expr>', '<op_relacional>', '<expr>']),
-    27: ('<inc_dec>', ['INC']),
-    28: ('<inc_dec>', ['DEC']),
-    29: ('<inc_dec>', ['<op_arit>', 'Num_inteiro']),
-    30: ('<expr>', ['<term>', '<op>', '<term>']),
-    31: ('<expr>', ['<term>']),
-    32: ('<term>', ['Variavel']),
-    33: ('<term>', ['Num_inteiro']),
-    34: ('<term>', ['Num_real']),
-    35: ('<term>', ['Caracter']),
-    36: ('<term>', ['ZEROUM']),
-    37: ('<op>', ['<op_relacional>']),
-    38: ('<op>', ['<op_arit>']),
-    39: ('<op>', ['<op_logico>']),
-    40: ('<op_arit>', ['+']),
-    41: ('<op_arit>', ['-']),
-    42: ('<op_arit>', ['*']),
-    43: ('<op_arit>', ['/']),
-    44: ('<op_logico>', ['AND']),
-    45: ('<op_logico>', ['OR']),
-    46: ('<op_relacional>', ['>']),
-    47: ('<op_relacional>', ['<']),
-    48: ('<op_relacional>', ['IGUAL']),
-    49: ('<op_relacional>', ['DIF']),
+    1: ('<programa>', ['INICIO', '<decls_opt>', '<instrucoes_opt>', 'FIM']),
+    2: ('<decls_opt>', ['<decls>']),
+    3: ('<decls_opt>', ['VAZIO_DECLS']),  # Ɛ
+    4: ('<decls>', ['<decl>','<decls>']),
+    5: ('<decls>', ['<decl>']),
+    6: ('<decl>', ['Variavel', '<tipo>', '.']),
+    7: ('<decl>', ['Variavel', '<atrib>']),
+    8: ('<tipo>', ['INTEIRO']),
+    9: ('<tipo>', ['REAL']),
+    10: ('<tipo>', ['CARACTER']),
+    11: ('<tipo>', ['ZEROUM']),
+    12: ('<instrucoes_opt>', ['<instrucoes>']),
+    13: ('<instrucoes_opt>', ['VAZIO_INSTRUCOES']),
+    14: ('<instrucoes>', ['<instrucao>', '<instrucoes>']),
+    15: ('<instrucoes>', ['<instrucao>']),  # Ɛ
+    16: ('<instrucao>', ['<atrib>']),
+    17: ('<instrucao>', ['<atrib_teclado>']),
+    18: ('<instrucao>', ['<escrever>']),
+    19: ('<instrucao>', ['<condicional_se>']),
+    20: ('<instrucao>', ['<loop_durante>']),
+    21: ('<instrucao>', ['<loop_para>']),
+    22: ('<atrib>', ['RECEBA', '<expr>', '.']),
+    23: ('<atrib_teclado>', ['RECEBAT', 'Variavel', '.']),
+    24: ('<escrever>', ['ESCREVA', '(', '<expr>', ')', '.']),
+    25: ('<condicional_se>', ['SE', '(', '<expr>', ')', '{', '<instrucoes>', '}', '<senao_op>']),
+    26: ('<senao_op>', ['SENAO', '{', '<instrucoes>', '}']),
+    27: ('<senao_op>', ['SENAO_VAZIO']),  # Ɛ
+    28: ('<loop_durante>', ['DURANTE', '(', '<expr>', ')', '{', '<instrucoes>', 'Variavel', '<inc_dec>', '}']),
+    29: ('<loop_para>', ['PARA', '(', '<atrib>', '.', '<condicao>', '.', 'Variavel', '<inc_dec>', ')', '{', '<instrucoes>', '}']),
+    30: ('<condicao>', ['<expr>', '<op_relacional>', '<expr>']),
+    31: ('<inc_dec>', ['INC']),
+    32: ('<inc_dec>', ['DEC']),
+    33: ('<inc_dec>', ['op_arit', 'Num_inteiro']),
+    34: ('<expr>', ['<term>', '<op>', '<term>']),
+    35: ('<expr>', ['<term>']),
+    36: ('<term>', ['Variavel']),
+    37: ('<term>', ['Num_inteiro']),
+    38: ('<term>', ['Num_real']),
+    39: ('<term>', ['Caracter']),
+    40: ('<term>', ['ZEROUM']),
+    41: ('<op>', ['op_relacional']),
+    42: ('<op>', ['op_arit']),
+    43: ('<op>', ['op_logico']),
 }
 
 
@@ -351,24 +343,46 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
         print()
 
        # Caso especial: se o token é 'op_relacional' e o estado é 100, substituir pelo lexema do próximo token
-        if (token_atual == 'op_relacional' or token_atual == 'op_arit') and (estado_atual == 100 or estado_atual == 26):
-            if cursor + 1 < len(tokens1):  # Verifica se há um próximo token
-                lexema_proximo_token = tokens1[cursor][1]  # Obtém o lexema do próximo token
-                print(f"Caso especial: substituindo 'op_relacional' por '{lexema_proximo_token}'")
-                token_atual = lexema_proximo_token  # Substitui o token atual pelo lexema
-            else:
-                print("Erro: Não há próximo token para substituir 'op_relacional'.")
-                return False
+        #if token_atual != 'Variavel' and estado_atual == 3 :
+        #  print('Caso especial: SAIMOS DE DECL E DECLS')
+        #  novo_estado = 90  # Usa o estado normal da ação
+        #  estado_atual = 90  
+            
+        #  pilha.append(token_atual)  #Empilha o token atual
+        #  pilha.append(novo_estado)  #Empilha o novo estado
+        #  print(pilha)
+        #  print(tokens1[cursor][0])
+        #  print(token_atual)
+        #  print(estado_atual)
+          
+          #Se o próximo token for FIM ou um token de <instrucoes>, o parser deve reduzir <decls> para Ɛ em vez de continuar a produção recursiva.
         
-        elif token_atual == 'Variavel' and estado_atual == 56 :
-            if cursor + 1 < len(tokens1):  # Verifica se há um próximo token
-                print('Caso especial: pulando token ')
-                token_atual = tokens1[cursor + 1][0]  # Substitui o token atual pelo lexema
-                print(token_atual)
-                cursor += 1
-            else:
-                print("Erro: Não há próximo token para substituir 'op_relacional'.")
-                return False
+        if token_atual == 'FIM' and estado_atual == 4 :
+          print('Caso especial: SAIMOS DE instruções')
+          novo_estado = 12  # Usa o estado normal da ação
+          estado_atual = 12  
+            
+          pilha.append(token_atual)  #Empilha o token atual
+          pilha.append(novo_estado)  #Empilha o novo estado
+          print(pilha)
+          #cursor += 1  #Avança para o próximo token
+        #  if cursor + 1 < len(tokens1):  # Verifica se há um próximo token
+        #    estado_atual = 
+            
+        #        token_atual = lexema_proximo_token  # Substitui o token atual pelo lexema
+        #    else:
+        #        print("Erro: Não há próximo token para substituir 'op_relacional'.")
+        #        return False
+        
+        #elif token_atual == 'Variavel' and estado_atual == 56 :
+        #    if cursor + 1 < len(tokens1):  # Verifica se há um próximo token
+        #        print('Caso especial: pulando token ')
+        #        token_atual = tokens1[cursor + 1][0]  # Substitui o token atual pelo lexema
+        #        print(token_atual)
+        #        cursor += 1
+        #    else:
+         #       print("Erro: Não há próximo token para substituir 'op_relacional'.")
+         #       return False
         #Verifica se o token existe na tabela e se a entrada não é NaN 
         if token_atual in tabela_SLR.columns and not pd.isna(tabela_SLR.loc[estado_atual, token_atual]):
             acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
@@ -424,18 +438,19 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
         elif acao[0] == 'reduz':
             #print("token atual aaa: ", tokens1[cursor][0] )
             #print("ast atual aaa: ", acao[1] )
-            if cursor + 1 < len(tokens1) and tokens1[cursor][0] == 'ESCREVA' and acao[1] == 5:
-              print("Caso especial: próximo token é ESCREVA")
-              pilha = pilha[:-1]  # Remove o último estado da pilha
-              pilha.append(4)  # Adiciona o estado 4
-              novo_estado = 34  # Pula para o estado 34
-              continue
+            #if cursor + 1 < len(tokens1) and tokens1[cursor][0] == 'ESCREVA' and acao[1] == 5:
+            #  print("Caso especial: próximo token é ESCREVA")
+            #  pilha = pilha[:-1]  # Remove o último estado da pilha
+            #  pilha.append(4)  # Adiciona o estado 4
+            #  novo_estado = 34  # Pula para o estado 34
+            #  continue
 
             num_producao = acao[1]
             nao_terminal, producao = producoes[num_producao]
             tamanho_producao = len(producao) * 2  #O dobro na redução
             #Desempilha os elementos correspondentes à produção
             pilha = pilha[:-tamanho_producao]
+            print(pilha)
             estado_topo = pilha[-1]
 
             #Transição de estado com o não-terminal reduzido
@@ -443,6 +458,7 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
                 desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
             else:
                 print(f"Erro de desvio: não-terminal '{nao_terminal}' inesperado após redução.")
+                print(pilha)
                 return False
 
             #Verifica se a ação de desvio é válida
@@ -455,7 +471,9 @@ def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
         else:
             print("Erro: Ação desconhecida.")
             return False
-
+    print(token_atual)
+    print(estado_atual)
+    print(pilha)
     print("Erro: Fim inesperado da entrada.")
     return False
 
