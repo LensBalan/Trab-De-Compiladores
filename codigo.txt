@@ -1,19 +1,17 @@
 INICIO
-
-
-!!VAZIO_DECLS
+VAZIO_DECLS
 !!VAZIO_INSTRUCOES
 
 !! Codigo aula de Compiladores
 
-x INTEIRO .
+!!x INTEIRO .
 !!a REAL .
 !!b INTEIRO .
 !!y CARACTER .
 !!z ZEROUM .
 !!i INTEIRO .
 
-a RECEBA 1,5 .
+!!a RECEBA 1,5 .
 !!x RECEBA 2 .
 !!y RECEBA ^Luva dnjsndndwsndwndwndw^ .
 !!z RECEBA 0 .
@@ -24,12 +22,14 @@ a RECEBA 1,5 .
 
 SE (a > b ) {
 
-a RECEBA 2 .
-} 
-!!SENAO {
+a RECEBA b .
 !!ESCREVA ( ^Digite seu nome: \q ^) .
+}
+!!SENAO_VAZIO
+SENAO {
+ESCREVA ( ^Digite seu nome: \q ^) .
 
-!!}
+}
 
 !!DURANTE (x DIF b ) {
 !!x INC .
