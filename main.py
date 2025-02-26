@@ -47,6 +47,8 @@ def transicao(estado, caracter):
     elif estado == 'e2': 
         if 'A' <= caracter <= 'Z': 
           return 'e2'
+        if caracter == '_':
+          return 'e2'
         if caracter == ' ' or caracter == '\n':
           return 'e3'
         return 'e25' # Erro, ID invalido
@@ -63,16 +65,9 @@ def transicao(estado, caracter):
           return 'e7'
         return 'e10'
     elif estado == 'e7':
-        if 'a' <= caracter <= 'z':
-          return 'e7'
-        if 'A' <= caracter <= 'Z':
-          return 'e7'
-        if '0' <= caracter <= '9':
-          return 'e7'
-        if caracter == ' ':
-          return 'e7'
-        if caracter == '\n':
+        if caracter in ('\n', '\r'):  # Se encontrar quebra de linha, finaliza o comentário
           return 'e8'
+        return 'e7'  # Continua consumindo caracteres normalmente
     elif estado == 'e11':
         if '0' <= caracter <= '9':
           return 'e11'
@@ -96,35 +91,7 @@ def transicao(estado, caracter):
         return 'e22'
       if caracter == '^':
         return 'e23'
-        #if 'a' <= caracter <= 'z':
-       #  return 'e22'
-      #  if 'A' <= caracter <= 'Z':
-       #   return 'e22'
-       # if '0' <= caracter <= '9':
-       #   return 'e22'
-      #  if caracter == ' ':
-      #    return 'e22'
-      ##  if '\u0021' <= caracter <= '\u002F':  # inclui !"#$%&'()*+-./
-       #   return 'e22'
-      #  if '\u003A' <= caracter <= '\u0040':  # inclui : ; < = > ? @
-        #  return 'e22'
-      #  if '\u005B' <= caracter <= '\u0060' and caracter != '^':  #inclui [\]_`
-        #  return 'e22'
     elif estado == 'e22':
-       # if 'a' <= caracter <= 'z':
-      #    return 'e22'
-      #  if 'A' <= caracter <= 'Z':
-      #    return 'e22'
-      #  if '0' <= caracter <= '9':
-      #    return 'e22'
-       # if caracter == ' ':
-      #    return 'e22'
-#if '\u0021' <= caracter <= '\u002F':  # inclui !"#$%&'()*+-./
-      #    return 'e22'
-      #  if '\u003A' <= caracter <= '\u0040':  # inclui : ; < = > ? @
-      #    return 'e22'
-      #  if '\u005B' <= caracter <= '\u0060' and caracter != '^':  #inclui [\]_`
-     #     return 'e22'
         if caracter != '^':
           return 'e22'
         if caracter == '^':
@@ -146,8 +113,8 @@ estado_final = {
     'e16': '(',
     'e17': ')',
     'e18': '.',
-    'e19': 'Op_arit',
-    'e20': 'Op_relacional',
+    'e19': 'op_arit',
+    'e20': 'op_relacional',
     'e23': 'Caracter',
     'e24': 'ERRO, numero_invalido',
     'e25': 'ERRO, ID_invalido',
@@ -237,6 +204,9 @@ processar_codigo('codigo.txt')
 
 #Dic para obter_token()
 Tipos_id = {
+    'VAZIO_DECLS': 'VAZIO_DECLS',
+    'VAZIO_INSTRUCOES': 'VAZIO_INSTRUCOES',
+    'SENAO_VAZIO': 'SENAO_VAZIO',
     'SE': 'SE',
     'SENAO': 'SENAO',
     'DURANTE': 'DURANTE',
@@ -253,8 +223,8 @@ Tipos_id = {
     'INICIO': 'INICIO',
     'FIM': 'FIM',
     'INC': 'INC',
-    'DIF': 'Op_relacional',
-    'IGUAL': 'Op_relacional',
+    'DIF': 'op_relacional',
+    'IGUAL': 'op_relacional',
 }
 
 # Func para obter o token correto pros ID
@@ -274,26 +244,26 @@ for token, lexema, linha in tabela_de_tokens:
 
 print("\n Tabela de Tokens: \n")
 for token in tokens_atualizados:
-    print(token)
+    print(token[0])
 
+print()
 
 # ------------------------------- Sintático ---------------------------------------
 
 def carregar_tabela_SLR(arq):
     #Carrega a planilha
-    tabela = pd.read_excel(arq, index_col=0)  # index_col=0 define a primeira coluna comoos estados
+    tabela = pd.read_excel(arq, index_col=0)  # index_col=0 define a primeira coluna como os estados
     return tabela
 
-# Caminho para o arquivo Excel
-arq = 'Tabela_SLR.xlsx'
+# arq excel
+arq = 'Tabela_SLR4.xlsx'
 tabela_SLR = carregar_tabela_SLR(arq)
 print("Tabela SLR Carregada.")
 print()
 
 #Interpretar E, R, AC e desvios da tabela
 def interpretar_entrada_tabela(entrada):
-    #Verifica se a entrada é uma string para identificar empilha/reduz/aceita
-    if isinstance(entrada, str):
+    if isinstance(entrada, str): #Verifica se a entrada é uma string para identificar empilha/reduz/aceita
         
         if entrada.startswith('E'):
             return ('empilha', int(entrada[1:]))
@@ -314,115 +284,123 @@ def interpretar_entrada_tabela(entrada):
 #Gramatica
 producoes = {
     0: ('<programa`>', ['<programa>']),
-    1: ('<programa>', ['INICIO', '<decls>', '<instrucoes>', 'FIM']),
-    2: ('<decls>', ['<decl>', '<decls>']),
-    3: ('<decls>', []),  # Ɛ
-    4: ('<decl>', ['Variavel', '<tipo>', '.']),
-    5: ('<tipo>', ['INTEIRO']),
-    6: ('<tipo>', ['REAL']),
-    7: ('<tipo>', ['CARACTER']),
-    8: ('<tipo>', ['ZEROUM']),
-    9: ('<instrucoes>', ['<instrucao>', '<instrucoes>']),
-    10: ('<instrucoes>', []),  # Ɛ
-    11: ('<instrucao>', ['<atrib>']),
-    12: ('<instrucao>', ['<atrib_teclado>']),
-    13: ('<instrucao>', ['<escrever>']),
-    14: ('<instrucao>', ['<condicional_se>']),
-    15: ('<instrucao>', ['<loop_durante>']),
-    16: ('<instrucao>', ['<loop_para>']),
-    17: ('<atrib>', ['Variavel', 'RECEBA', '<expr>', '.']),
-    18: ('<atrib_teclado>', ['RECEBAT', 'Variavel', '.']),
-    19: ('<escrever>', ['ESCREVA', '(', '<expr>', ')', '.']),
-    20: ('<condicional_se>', ['SE', '(', '<expr>', ')', '{', '<instrucoes>', '}', '<senao_op>']),
-    21: ('<senao_op>', ['SENAO', '{', '<instrucoes>', '}']),
-    22: ('<senao_op>', []),  # Ɛ
-    23: ('<loop_durante>', ['DURANTE', '(', '<expr>', ')', '{', '<instrucoes>', 'Variavel', '<inc_dec>', '}']),
-    24: ('<loop_para>', ['PARA', '(', '<atrib>', '.', '<condicao>', '.', 'Variavel', '<inc_dec>', ')', '{', '<instrucoes>', '}']),
-    25: ('<condicao>', ['<expr>', '<op_relacional>', '<expr>']),
-    26: ('<inc_dec>', ['INC']),
-    27: ('<inc_dec>', ['DEC']),
-    28: ('<inc_dec>', ['<op_arit>', 'Num_inteiro']),
-    29: ('<expr>', ['<term>', '<op>', '<term>']),
-    30: ('<expr>', ['<term>']),
-    31: ('<term>', ['Num_inteiro']),
-    32: ('<term>', ['Num_real']),
-    33: ('<term>', ['Caracter']),
-    34: ('<term>', ['ZEROUM']),
-    35: ('<op>', ['<op_relacional>']),
-    36: ('<op>', ['<op_arit>']),
-    37: ('<op>', ['<op_logico>']),
-    38: ('<op_arit>', ['+']),
-    39: ('<op_arit>', ['-']),
-    40: ('<op_arit>', ['*']),
-    41: ('<op_arit>', ['/']),
-    42: ('<op_logico>', ['AND']),
-    43: ('<op_logico>', ['OR']),
-    44: ('<op_relacional>', ['>']),
-    45: ('<op_relacional>', ['<']),
-    46: ('<op_relacional>', ['IGUAL']),
-    47: ('<op_relacional>', ['DIF']),
+    1: ('<programa>', ['INICIO', '<decls_opt>', '<instrucoes_opt>', 'FIM']),
+    2: ('<decls_opt>', ['<decls>']),
+    3: ('<decls_opt>', ['VAZIO_DECLS']),  # Ɛ
+    4: ('<decls>', ['<decl>','<decls>']),
+    5: ('<decls>', ['<decl>']),
+    6: ('<decl>', ['Variavel', '<tipo>', '.']),
+    7: ('<decl>', ['Variavel', '<atrib>']),
+    8: ('<tipo>', ['INTEIRO']),
+    9: ('<tipo>', ['REAL']),
+    10: ('<tipo>', ['CARACTER']),
+    11: ('<tipo>', ['ZEROUM']),
+    12: ('<instrucoes_opt>', ['<instrucoes>']),
+    13: ('<instrucoes_opt>', ['VAZIO_INSTRUCOES']),
+    14: ('<instrucoes>', ['<instrucao>', '<instrucoes>']),
+    15: ('<instrucoes>', ['<instrucao>']),  # Ɛ
+    16: ('<instrucoes>', ['<decls>']),
+    17: ('<instrucao>', ['<atrib>']),
+    18: ('<instrucao>', ['<atrib_teclado>']),
+    19: ('<instrucao>', ['<escrever>']),
+    20: ('<instrucao>', ['<condicional_se>']),
+    21: ('<instrucao>', ['<loop_durante>']),
+    22: ('<instrucao>', ['<loop_para>']),
+    23: ('<atrib>', ['RECEBA', '<expr>', '.']),
+    24: ('<atrib_teclado>', ['RECEBAT', 'Variavel', '.']),
+    25: ('<escrever>', ['ESCREVA', '(', '<expr>', ')', '.']),
+    26: ('<condicional_se>', ['SE', '(', '<expr>', ')', '{', '<instrucoes>', '}', '<senao_op>']),
+    27: ('<senao_op>', ['SENAO', '{', '<instrucoes>', '}']),
+    28: ('<senao_op>', ['SENAO_VAZIO']),  # Ɛ
+    29: ('<loop_durante>', ['DURANTE', '(', '<expr>', ')', '{', '<instrucoes>', 'Variavel', '<inc_dec>', '}']),
+    30: ('<loop_para>', ['PARA', '(', '<atrib>', '.', '<condicao>', '.', 'Variavel', '<inc_dec>', ')', '{', '<instrucoes>', '}']),
+    31: ('<condicao>', ['<expr>', '<op_relacional>', '<expr>']),
+    32: ('<inc_dec>', ['INC']),
+    33: ('<inc_dec>', ['DEC']),
+    34: ('<inc_dec>', ['op_arit', 'Num_inteiro']),
+    35: ('<expr>', ['<term>', '<op>', '<term>']),
+    36: ('<expr>', ['<term>']),
+    37: ('<term>', ['Variavel']),
+    38: ('<term>', ['Num_inteiro']),
+    39: ('<term>', ['Num_real']),
+    40: ('<term>', ['Caracter']),
+    41: ('<term>', ['ZEROUM']),
+    42: ('<op>', ['op_relacional']),
+    43: ('<op>', ['op_arit']),
+    44: ('<op>', ['op_logico']),
 }
 
 
-def analisador_sintatico_bottom_up(tokens, tabela_SLR, producoes):
-    pilha = [0]  #Estado inicial
-    cursor = 0   #indice do token atual
+def analisador_sintatico_bottom_up(tokens1, tabela_SLR, producoes):
+    pilha = [0]
+    cursor = 0
 
-    while cursor < len(tokens):
-        estado_atual = pilha[-1]  #Estado no topo da pilha
-        token_atual = tokens[cursor][0]  #Obter o token atual (ex: 'INICIO', 'PARA')
+    while cursor < len(tokens1):
+        estado_atual = pilha[-1]  
+        token_atual = tokens1[cursor][0]  
         print("Estado atual:", estado_atual)
         print("Token atual:", token_atual)
+        print("Pilha:", pilha)
+        print()
 
-        #Verifica se o token existe na tabela e se a entrada não é NaN (vazio)
         if token_atual in tabela_SLR.columns and not pd.isna(tabela_SLR.loc[estado_atual, token_atual]):
             acao = interpretar_entrada_tabela(tabela_SLR.loc[estado_atual, token_atual])
         else:
-            print(f"Erro: Token '{token_atual}' não encontrado na tabela ou entrada invalida para o estado {estado_atual}.")
-            return False
+
+          
+          print(f"Erro: Token '{token_atual}' não encontrado na tabela ou entrada inválida para o estado {estado_atual}.")
+          print(tabela_SLR.loc[estado_atual, token_atual])
+          return False
 
         print("Ação:", acao)
         print()
 
         if acao is None:
-            print(f"Erro sintático: token inesperado '{token_atual}' na linha {tokens[cursor][2]}")
+            print(f"Erro sintático: token inesperado '{token_atual}' na linha {tokens1[cursor][2]}")
             return False
+        
         elif acao[0] == 'aceita':
             print("Aceitação: análise sintática concluída com sucesso.")
             return True
+        
         elif acao[0] == 'empilha':
-            novo_estado = acao[1]
-            pilha.append(token_atual)  # Empilha o token atual
-            pilha.append(novo_estado)  # Empilha o novo estado
-            cursor += 1  #Avança para o prox token
+          novo_estado = acao[1]  
+            
+            
+          pilha.append(token_atual)  
+          pilha.append(novo_estado)  
+          cursor += 1  
+
         elif acao[0] == 'reduz':
+
             num_producao = acao[1]
             nao_terminal, producao = producoes[num_producao]
-            tamanho_producao = len(producao) * 2  #O dobro na reduçao
-            #Desempilha os elementos correspondentes a prod
+            tamanho_producao = len(producao) * 2
             pilha = pilha[:-tamanho_producao]
+            print(pilha)
             estado_topo = pilha[-1]
 
-            #Transição de estado com o não-terminal reduzido
             if nao_terminal in tabela_SLR.columns and not pd.isna(tabela_SLR.loc[estado_topo, nao_terminal]):
                 desvio = interpretar_entrada_tabela(tabela_SLR.loc[estado_topo, nao_terminal])
             else:
                 print(f"Erro de desvio: não-terminal '{nao_terminal}' inesperado após redução.")
+                print(pilha)
                 return False
 
-            # erifica se a ação de desvio é valida
             if desvio and desvio[0] == 'desvio':
                 pilha.append(nao_terminal)
                 pilha.append(desvio[1])
             else:
-                print(f"Erro: Ação de desvio invalida para o não-terminal '{nao_terminal}'")
+                print(f"Erro: Ação de desvio inválida para o não-terminal '{nao_terminal}'")
                 return False
         else:
             print("Erro: Ação desconhecida.")
             return False
 
-    print("Erro: Fim inesperado da entrada.")
-    return False
+    if pilha[-1] == 15 and token_atual == 'FIM':
+       print("Aceitação: análise sintática concluída com sucesso.")
+    else:
+       print('ERRO ABSURDO')
 
 
 tokens1 = tokens_atualizados #tokens do lexico
